@@ -2,7 +2,7 @@ const puppeteer = require("puppeteer");
 const mysql = require("mysql");
 const PromisePool = require("@supercharge/promise-pool");
 var pool = mysql.createPool({
-    connectionLimit: 25,
+    connectionLimit: 50,
     host: process.env.DBHOST,
     user: process.env.DBUSER,
     password: process.env.DBPASSWORD,
@@ -20,26 +20,28 @@ function db(sql, fields) {
         });
     });
 }
-
+//manually setting streaming service list to simplify the code
 async function getStreamingLocations() {
     try {
         const browser = await puppeteer.launch();//{ headless: false }  - use to see visually
-       let movies = await db(`select movieID, movieName, releaseYear from movies`);
-       let movieData = [];
-       //web scraping pool
-       await PromisePool.withConcurrency(5).for(movies).process(async movie => {
+        let movies = await db(`select movieID, movieName, releaseYear
+                               from movies where releaseYear = 1980`);
+        let movieData = [];
+        //web scraping pool
+        console.log("Got movies")
+        await PromisePool.withConcurrency(5).for(movies).process(async movie => {
             const page = await browser.newPage();
             await page.goto(`https://www.justwatch.com/us/search?q=${encodeURIComponent(movie.movieName + " (" + movie.releaseYear + ")")}`, {
                 waitUntil: 'networkidle2',
             });
-            console.log(`https://www.justwatch.com/us/search?q=${encodeURIComponent(movie.movieName + " (" + movie.releaseYear + ")")}`);
+            //    console.log(`https://www.justwatch.com/us/search?q=${encodeURIComponent(movie.movieName + " (" + movie.releaseYear + ")")}`);
             let href = await page.evaluate(() => {
                 //picking first result
                 let base = document.querySelector("ion-row");
                 return base.querySelector("a").href;
             });
-            console.log(href);
-            await page.goto(href,{
+            // console.log(href);
+            await page.goto(href, {
                 waitUntil: 'networkidle2'
             })
             let singleMovieData = await page.evaluate((name, year, id) => {
@@ -58,10 +60,10 @@ async function getStreamingLocations() {
                 //rating
                 let movieRating = "N/A"
                 let ratingLabel = Array.from(document.querySelectorAll(".detail-infos__subheading")).find(el => {
-                   return el.innerText.trim().toLowerCase() == "age rating";
+                    return el.innerText.trim().toLowerCase() == "age rating";
                 });
                 if (ratingLabel) {
-                   movieRating = ratingLabel.parentElement.querySelector(".detail-infos__detail--values").innerText;
+                    movieRating = ratingLabel.parentElement.querySelector(".detail-infos__detail--values").innerText;
                 }
                 //description
                 let description = document.querySelector(".text-wrap-pre-line").innerText;
@@ -75,7 +77,7 @@ async function getStreamingLocations() {
                 }
             }, movie.movieName, movie.releaseYear, movie.movieID);
             console.log("finished " + movie.movieName);
-            console.log(singleMovieData.poster);
+            //   console.log(singleMovieData.poster);
             // console.log(table);
             movieData.push(singleMovieData)
             await page.close();
@@ -84,18 +86,22 @@ async function getStreamingLocations() {
         console.log(movieData);
         console.log("Web Scraping Pool complete");
         //db query pool
-       /* await PromisePool.withConcurrency(20).for(movieData).process(async movie => {
-            const exists = await db(`select * from movies where movieName = ? and releaseYear = ?`, [movie.name, movie.year]);//probably not the fastest/most efficient approach
-            if (exists.length == 0) {
-                let sql = 'insert into movies(movieName, releaseYear, ranking) values (?,?,?)';
-                let values = [movie.name, movie.year, movie.rank];
-                await db(sql, values);
-            } else {
-                let sql = 'update movies set ranking = ? where movieName = ? and releaseYear = ?';
-                let values = [movie.rank, movie.name, movie.year];
-                await db(sql, values);
-            }
-        }); */
+        await PromisePool.withConcurrency(45).for(movieData).process(async movie => {
+            //save movie details
+            let sql = `insert into movieDetails(movieID, posterURL, rating, description)
+                       values (?, ?, ?, ?) on duplicate key
+            update
+                posterURL =
+            values (posterURL),
+                rating =
+            values (rating),
+                description =
+            values (description)`;
+            let values = [movie.movieID, movie.poster, movie.rating, movie.description];
+            await db(sql, values);
+            //save streaming services
+            //todo add code - get streaming service scraper first
+        });
         console.log("Data uploaded");
     } catch (err) {
         console.error(err);
