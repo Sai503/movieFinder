@@ -9,10 +9,6 @@ var pool = mysql.createPool({
     database: "movieFinder"
 });
 
-const movieCount = 100;
-const maxYear = 2021;
-const minYear = 1980;
-
 function db(sql, fields) {
     return new Promise((resolve, reject) => {
         pool.query(sql, fields, (err, result, field) => {
@@ -28,39 +24,65 @@ function db(sql, fields) {
 async function getStreamingLocations() {
     try {
         const browser = await puppeteer.launch();
-        let years = [];
-        for (let i = minYear; i <= maxYear; i++) {
-            years.push(i);
-        }
-        let movies = [];
-        await PromisePool.withConcurrency(5).for(years).process(async year => {
+       let movies = await db(`select movieID, movieName, releaseYear from movies`);
+       let movieData = [];
+       //web scraping pool
+       await PromisePool.withConcurrency(5).for(movies).process(async movie => {
             const page = await browser.newPage();
-            await page.goto(`https://www.boxofficemojo.com/year/${year}/?releaseScale=wide&grossesOption=totalGrosses`, {
+            await page.goto(`https://www.boxofficemojo.com/us/search?q=${encodeURIComponent(movie.movieName + " (" + movie.releaseYear + ")")}`, {
                 waitUntil: 'networkidle2',
             });
-            let table = await page.evaluate((year) => {
-                let rows = document.querySelector(".scrolling-data-table").rows;
-                let maxRow = Math.min(rows.length, 101);
-                let data = [];
-                for (let i = 1; i < maxRow; i++) {
-                    data.push({
-                        rank: rows[i].cells[0].innerText,
-                        name: rows[i].cells[1].innerText,
-                        year: year
+            /*
+            let base = document.querySelector("ion-row");
+            base.querySelector("a").href
+             price-comparison__grid__row--stream
+             */
+
+            let singleMovieData = await page.evaluate((name, year, id) => {
+                //picking first result
+                let base = document.querySelector("ion-row");
+                window.location.href = base.querySelector("a").href;
+                //streaming services
+                let streaming = [];
+                let streamRow = document.querySelector(".price-comparison__grid__row--stream");
+                if (streamRow) {
+                    let serviceList = streamRow.querySelectorAll(".price-comparison__grid__row__element");  //let rows = base.querySelectorAll(".price-comparison__grid__row__element")
+                    serviceList.forEach(value => {
+                        streaming.push(value.querySelector("img").title);
                     });
                 }
-                return data;
-            }, year);
-            console.log("finished " + year);
+                //poster
+                let poster = document.querySelector(".title-poster--no-radius-bottom");
+                let posterURL = poster.querySelector("img").src;
+                //rating
+                let movieRating = "N/A"
+                let ratingLabel = Array.from(document.querySelectorAll(".detail-infos__subheading")).find(el => {
+                   return el.innerText.trim().toLowerCase() == "age rating";
+                });
+                if (ratingLabel) {
+                   movieRating = ratingLabel.parentElement.querySelector(".detail-infos__detail--values").innerText;
+                }
+                //description
+                let description = document.querySelector(".text-wrap-pre-line").innerText;
+                //data return
+                return {
+                    movieID: id,
+                    services: streaming,
+                    poster: posterURL,
+                    rating: movieRating,
+                    description: description
+                }
+            }, movie.movieName, movie.releaseYear, movie.id);
+            console.log("finished " + movie.movieName);
             // console.log(table);
-            movies.push(...table)
+            movieData.push(singleMovieData)
             await page.close();
             //  return table;
         });
-        console.log(movies);
-        console.log("Pool complete");
-        await PromisePool.withConcurrency(20).for(movies).process(async movie => {
-            //under (potentially flawed...) assumption that no two movies have the same name from the same year
+        console.log(movieData);
+        console.log("Web Scraping Pool complete");
+        //db query pool
+       /* await PromisePool.withConcurrency(20).for(movieData).process(async movie => {
             const exists = await db(`select * from movies where movieName = ? and releaseYear = ?`, [movie.name, movie.year]);//probably not the fastest/most efficient approach
             if (exists.length == 0) {
                 let sql = 'insert into movies(movieName, releaseYear, ranking) values (?,?,?)';
@@ -71,7 +93,7 @@ async function getStreamingLocations() {
                 let values = [movie.rank, movie.name, movie.year];
                 await db(sql, values);
             }
-        });
+        }); */
         console.log("Data uploaded");
     } catch (err) {
         console.error(err);
