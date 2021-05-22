@@ -29,19 +29,20 @@ async function getStreamingLocations() {
        //web scraping pool
        await PromisePool.withConcurrency(5).for(movies).process(async movie => {
             const page = await browser.newPage();
-            await page.goto(`https://www.boxofficemojo.com/us/search?q=${encodeURIComponent(movie.movieName + " (" + movie.releaseYear + ")")}`, {
+            await page.goto(`https://www.justwatch.com/us/search?q=${encodeURIComponent(movie.movieName + " (" + movie.releaseYear + ")")}`, {
                 waitUntil: 'networkidle2',
             });
-            /*
-            let base = document.querySelector("ion-row");
-            base.querySelector("a").href
-             price-comparison__grid__row--stream
-             */
-
-            let singleMovieData = await page.evaluate((name, year, id) => {
+            console.log(`https://www.justwatch.com/us/search?q=${encodeURIComponent(movie.movieName + " (" + movie.releaseYear + ")")}`);
+            let href = await page.evaluate(() => {
                 //picking first result
                 let base = document.querySelector("ion-row");
-                window.location.href = base.querySelector("a").href;
+                return base.querySelector("a").href;
+            });
+            console.log(href);
+            await page.goto(href,{
+                waitUntil: 'networkidle2'
+            })
+            let singleMovieData = await page.evaluate((name, year, id) => {
                 //streaming services
                 let streaming = [];
                 let streamRow = document.querySelector(".price-comparison__grid__row--stream");
@@ -52,7 +53,7 @@ async function getStreamingLocations() {
                     });
                 }
                 //poster
-                let poster = document.querySelector(".title-poster--no-radius-bottom");
+                let poster = document.querySelector(".title-poster--no-radius-bottom"); //.title-poster--no-radius-bottom if full size
                 let posterURL = poster.querySelector("img").src;
                 //rating
                 let movieRating = "N/A"
@@ -72,8 +73,9 @@ async function getStreamingLocations() {
                     rating: movieRating,
                     description: description
                 }
-            }, movie.movieName, movie.releaseYear, movie.id);
+            }, movie.movieName, movie.releaseYear, movie.movieID);
             console.log("finished " + movie.movieName);
+            console.log(singleMovieData.poster);
             // console.log(table);
             movieData.push(singleMovieData)
             await page.close();
