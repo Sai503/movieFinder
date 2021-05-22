@@ -23,7 +23,7 @@ function db(sql, fields) {
 
 async function getStreamingLocations() {
     try {
-        const browser = await puppeteer.launch();
+        const browser = await puppeteer.launch();//{ headless: false }  - use to see visually
        let movies = await db(`select movieID, movieName, releaseYear from movies`);
        let movieData = [];
        //web scraping pool
@@ -53,8 +53,8 @@ async function getStreamingLocations() {
                     });
                 }
                 //poster
-                let poster = document.querySelector(".title-poster--no-radius-bottom"); //.title-poster--no-radius-bottom if full size
-                let posterURL = poster.querySelector("img").src;
+                let poster = document.querySelectorAll(".title-poster--no-radius-bottom"); //.title-poster--no-radius-bottom if full size
+                let posterURL = poster[1].querySelector("img").src;
                 //rating
                 let movieRating = "N/A"
                 let ratingLabel = Array.from(document.querySelectorAll(".detail-infos__subheading")).find(el => {
