@@ -71,6 +71,8 @@ async function getMovies() {
                 let values = [movie.rank, movie.name, movie.year];
                 await db(sql, values);
             }
+
+
         });
         console.log("Data uploaded");
     } catch (err) {

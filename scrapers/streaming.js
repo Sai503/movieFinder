@@ -24,8 +24,7 @@ function db(sql, fields) {
 async function getStreamingLocations() {
     try {
         const browser = await puppeteer.launch();//{ headless: false }  - use to see visually
-        let movies = await db(`select movieID, movieName, releaseYear
-                               from movies where releaseYear = 1980`);
+        let movies = await db(`select movieID, movieName, releaseYear from movies`);//where releaseYear = 1980  use for test b/c only 4 movies
         let movieData = [];
         //web scraping pool
         console.log("Got movies")
@@ -86,7 +85,7 @@ async function getStreamingLocations() {
         console.log(movieData);
         console.log("Web Scraping Pool complete");
         //db query pool
-        await PromisePool.withConcurrency(45).for(movieData).process(async movie => {
+        await PromisePool.withConcurrency(40).for(movieData).process(async movie => {
             //save movie details
             let sql = `insert into movieDetails(movieID, posterURL, rating, description)
                        values (?, ?, ?, ?) on duplicate key
@@ -99,8 +98,30 @@ async function getStreamingLocations() {
             values (description)`;
             let values = [movie.movieID, movie.poster, movie.rating, movie.description];
             await db(sql, values);
+
             //save streaming services
-            //todo add code - get streaming service scraper first
+            sql = `insert into movieLocations(movieID, serviceID) values `;
+            values = [];
+            if (movie.services.length > 0) {
+                let serviceRequests = []
+                movie.services.forEach(serviceName => {
+                    serviceRequests.push(db("select serviceID from streamingServices where serviceName = ?", [serviceName]));
+                })
+                let serviceID = await Promise.all(serviceRequests);
+                serviceID.forEach((id, index) => {
+                    if (index > 0) {
+                        sql += " , ";
+                    }
+                    sql += "(?,?)"
+                    values.push(movie.movieID, id[0].serviceID);
+                })
+            } else {
+                sql += "(?,?)"
+                values.push(movie.movieID, 204);//204 is not currently streaming
+            }
+            sql += " on duplicate key update serviceID = values(serviceID)";
+            await db(sql, values);
+            console.log("uploaded " + movie.movieID);
         });
         console.log("Data uploaded");
     } catch (err) {
