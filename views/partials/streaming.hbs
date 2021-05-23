@@ -1,0 +1,32 @@
+<div class="row" style="margin-top: 2%;">
+    <div class="card">
+        <div class="card-header">
+            {{serviceName}}
+        </div>
+        <div class="card-body">
+            <div class="row g-0">
+                <div class="col-md-4">
+                    {{#if iconURL}}
+                        <a href="{{website}}">
+                            <img src="{{iconURL}}" width="100%" alt="{{serviceName}}" title="{{serviceName}}">
+                        </a>
+                    {{/if}}
+                    {{#unless iconURL}}
+                        <a href="{{website}}">
+                            <h3>{{serviceName}}</h3>
+                        </a>
+                    {{/unless}}
+                </div>
+                <div class="col-md-8">
+                    <h3>Movies:</h3>
+                    <ul>
+                        {{#each movies}}
+                            <li>{{movieName}} -- ({{releaseYear}})</li>
+                        {{/each}}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

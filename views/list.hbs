@@ -1,0 +1,24 @@
+{{>header}}
+<main id="main">
+    <!-- ======= Breadcrumbs ======= -->
+    <section id="breadcrumbs" class="breadcrumbs">
+        <div class="container">
+
+            <ol>
+                <li><a href="/index">Home</a></li>
+                <li>Movie List</li>
+            </ol>
+            <h2>Movie List by Service:</h2>
+
+        </div>
+    </section><!-- End Breadcrumbs -->
+
+    <section class="inner-page">
+        <div class="container">
+           {{#each services}}
+               {{>streaming}}
+           {{/each}}
+        </div>
+    </section>
+</main><!-- End #main -->
+{{>footer}}

@@ -86,7 +86,7 @@ in (select movieID from movieList where userID = ? and choiceID = 2))`, [gblUID]
     iconURL: "",
     movies: alreadyWatched
   });
-  res.render('list', services);
+  res.render('list', {services: services});
 });
 
 // catch 404 and forward to error handler
