@@ -4,8 +4,8 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
+//var indexRouter = require('./routes/index');
+//var usersRouter = require('./routes/users');
 
 var app = express();
 
@@ -28,7 +28,7 @@ app.get("/", (req, res) => {
 })
 
 app.get("/index", (req, res) => {
-  res.render("index", {title: "Express"});
+  res.render("index", {title: "MovieFinder.us", name: "Node.js"});
 });
 
 // catch 404 and forward to error handler
