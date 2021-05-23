@@ -1,8 +1,9 @@
-var createError = require('http-errors');
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
+const createError = require('http-errors');
+const express = require('express');
+const path = require('path');
+const cookieParser = require('cookie-parser');
+const logger = require('morgan');
+const hbs = require('hbs');
 
 //var indexRouter = require('./routes/index');
 //var usersRouter = require('./routes/users');
@@ -12,6 +13,7 @@ var app = express();
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'hbs');
+hbs.registerPartials(__dirname + '/views/partials', function (err) {console.error(err)});
 
 app.use(logger('dev'));
 app.use(express.json());
@@ -29,6 +31,10 @@ app.get("/", (req, res) => {
 
 app.get("/index", (req, res) => {
   res.render("index", {title: "MovieFinder.us", name: "Node.js"});
+});
+
+app.get("/demo", (req, res) => {
+  res.render("innerPage", {content: "This is a message"});
 });
 
 // catch 404 and forward to error handler
