@@ -48,8 +48,12 @@ app.get("/demo", (req, res) => {
 });
 
 app.get("/movies", async (req, res) => {
-  const id = 700;
-  res.redirect("/pickMovie?movieID=" + id);
+  const id = await db('select movieID from movies where movieID not in (select movieID from movieList where userID = ?) order by movieID asc limit 1', [gblUID]);
+  if (req.query.ajax) {
+    res.send(id[0].movieID);
+  } else {
+    res.redirect("/pickMovie?movieID=" + id[0].movieID);
+  }
 });
 
 app.post("/saveMovie", async (req, res) => {
