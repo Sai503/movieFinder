@@ -30,11 +30,11 @@ app.get("/", (req, res) => {
 })
 
 app.get("/index", (req, res) => {
-  res.render("index", {title: "MovieFinder.us", name: "Node.js"});
+  res.render("index", {home: true});
 });
 
 app.get("/demo", (req, res) => {
-  res.render("innerPage", {content: "This is a message"});
+  res.render("innerPage", {content: "This is a message for the demo page", home:false});
 });
 
 // catch 404 and forward to error handler
