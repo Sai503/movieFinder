@@ -4,7 +4,17 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const hbs = require('hbs');
-
+const mysql = require("mysql");
+const pool = mysql.createPool({
+  connectionLimit: 10,
+  host: process.env.DBHOST,
+  user: process.env.DBUSER,
+  password: process.env.DBPASSWORD,
+  database: "movieFinder"
+});
+//todo implement account system(login with google)
+//todo verify error handling
+const gblUID = 1;
 //var indexRouter = require('./routes/index');
 //var usersRouter = require('./routes/users');
 
@@ -37,6 +47,29 @@ app.get("/demo", (req, res) => {
   res.render("innerPage", {content: "This is a message for the demo page", home:false});
 });
 
+app.get("/movies", async (req, res) => {
+  const id = 700;
+  res.redirect("/pickMovie?movieID=" + id);
+});
+
+app.post("/saveMovie", async (req, res) => {
+    await db(`insert into movieList(userID, movieID, choiceID) values (?,?,?) on duplicate key update set choiceID = values(choiceID)`, [req.body.userID, req.body.movieID, req.body.choiceID]);
+    if (req.body.ajax) {
+      res.send("saved!");
+    } else {
+      res.redirect("/movies");
+    }
+});
+
+app.get("/pickMovie", async (req, res) => {
+  let data = await db('select movies.movieName, movies.releaseYear, movies.ranking, movieDetails.posterURL, movieDetails.rating, movieDetails.description from movies inner join movieDetails on movies.movieID = movieDetails.movieID where movies.movieID = ?', [req.query.movieID]);
+  res.render("movie", data[0]);
+});
+
+app.get("/list", async (req, res) => {
+
+});
+
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   next(createError(404));
@@ -52,5 +85,17 @@ app.use(function(err, req, res, next) {
   res.status(err.status || 500);
   res.render('error');
 });
+
+function db(sql, fields) {
+  return new Promise((resolve, reject) => {
+    pool.query(sql, fields, (err, result, field) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(result);
+      }
+    });
+  });
+}
 
 module.exports = app;

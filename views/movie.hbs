@@ -1,0 +1,61 @@
+{{>header}}
+
+<main id="main">
+    <!-- ======= Breadcrumbs ======= -->
+    <section id="breadcrumbs" class="breadcrumbs">
+        <div class="container">
+
+            <ol>
+                <li><a href="/index">Home</a></li>
+                <li>Pick Movies</li>
+            </ol>
+            <h2>Pick Movies</h2>
+
+        </div>
+    </section><!-- End Breadcrumbs -->
+
+    <section class="inner-page">
+        <div class="container">
+            <div class="row">
+                <h1 style="text-align: center;">{{movieName}} - ({{releaseYear}})</h1>
+            </div>
+            <div class="row">
+                <div class="col-4">
+                    <img width="100%" src="{{posterURL}}">
+                </div>
+                <div class="col-8">
+                    <div class="row">
+                        <div class="col">
+                            <button class="btn btn-success" style="width: 15vw; height: 10vw;" id="yes">
+                               <h1>Yes</h1>
+                            </button>
+                        </div>
+                        <div class="col">
+                            <button class="btn btn-danger btn-lg" style="width: 15vw; height: 10vw;" id="no">
+                                <h1>No</h1>
+                            </button>
+                        </div>
+                        <div class="col">
+                            <button class="btn btn-primary btn-lg" style="width: 15vw; height: 10vw;" id="yes">
+                                <h1>Already watched</h1>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <h2>Rated: {{rating}}</h2>
+                        </div>
+                        <div class="col">
+                            <h2>Ranked #{{ranking}} in {{releaseYear}}</h2>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <p>{{description}}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main><!-- End #main -->
+
+{{>footer}}
