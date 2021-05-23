@@ -57,7 +57,7 @@ app.get("/movies", async (req, res) => {
 });
 
 app.post("/saveMovie", async (req, res) => {
-    await db(`insert into movieList(userID, movieID, choiceID) values (?,?,?) on duplicate key update set choiceID = values(choiceID)`, [req.body.userID, req.body.movieID, req.body.choiceID]);
+    await db(`insert into movieList(userID, movieID, choiceID) values (?,?,?) on duplicate key update choiceID = values(choiceID)`, [gblUID, req.body.movieID, req.body.choiceID]);
     if (req.body.ajax) {
       res.send("saved!");
     } else {
@@ -66,12 +66,27 @@ app.post("/saveMovie", async (req, res) => {
 });
 
 app.get("/pickMovie", async (req, res) => {
-  let data = await db('select movies.movieName, movies.releaseYear, movies.ranking, movieDetails.posterURL, movieDetails.rating, movieDetails.description from movies inner join movieDetails on movies.movieID = movieDetails.movieID where movies.movieID = ?', [req.query.movieID]);
+  let data = await db('select movies.movieID, movies.movieName, movies.releaseYear, movies.ranking, movieDetails.posterURL, movieDetails.rating, movieDetails.description from movies inner join movieDetails on movies.movieID = movieDetails.movieID where movies.movieID = ?', [req.query.movieID]);
+  data[0].moviePage = true;
   res.render("movie", data[0]);
 });
 
 app.get("/list", async (req, res) => {
+  let alreadyWatched = await db(`select movieList.movieID, movies.movieName, movies.releaseYear from movieList inner join movies on movieList.movieID = movies.movieID where movieList.choiceID = 3 and movieList.userID = ?`, [gblUID]);
 
+  let services = await db(`select * from streamingServices where serviceID
+in (select distinct movieLocations.serviceID from movieLocations where movieID
+in (select movieID from movieList where userID = ? and choiceID = 2))`, [gblUID]);
+  for(let i = 0; i < services.length; i++) {
+    services[i].movies = await db(`select movieID, movieName, releaseYear from movies where movieID in (select movieID from movieList where choiceID = 2 and userID = ?) and movieID in (select movieID from movieLocations where serviceID = ?);`, [gblUID, services[i].serviceID]);
+  }
+  services.push({
+    serviceName: "Already Watched",
+    website: "",
+    iconURL: "",
+    movies: alreadyWatched
+  });
+  res.render('list', services);
 });
 
 // catch 404 and forward to error handler
