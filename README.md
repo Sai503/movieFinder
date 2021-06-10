@@ -6,3 +6,5 @@ Takes top 100 box office movies from each year, compiles user selections into li
 boxofficemojo.com 
 JustWatch.com
 Not for commercial use
+
+A School Project of the NHS Computer Programming Class - Ultimate Bridgetask
